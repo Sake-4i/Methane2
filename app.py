@@ -4,7 +4,7 @@ import time
 
 # Parameters
 threshold = 2.0  # Same as training threshold
-lookahead_steps = 3  # How many steps ahead to check for true exceedance
+lookahead_steps = 8  # How many steps ahead to check for true exceedance
 
 log_data = []  # For accumulating log entries
 
