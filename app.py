@@ -1,3 +1,14 @@
+import pandas as pd
+import streamlit as st
+import time
+
+# Parameters
+threshold = 2.0  # Same as training threshold
+lookahead_steps = 3  # How many steps ahead to check for true exceedance
+
+log_data = []  # For accumulating log entries
+
+
 import streamlit as st
 import pandas as pd
 import joblib
@@ -58,27 +69,46 @@ if model is not None and not df.empty:
 
         # Simulate row-by-row streaming
 for i in range(len(df)):
-    row = df.iloc[[i]]  # Keep as DataFrame for scaler
+    row = df.iloc[[i]]
     features = row[feature_cols]
     scaled = scaler.transform(features)
     prediction = model.predict(scaled)[0]
-    
-    # Actual exceedance from dataset
-    actual = row['Exceed'].values[0]
 
-    # Determine if prediction was correct
-    correct = "✅ Correct" if prediction == actual else "❌ Incorrect"
+    # Compute actual average methane for current row
+    mm_actual = row[['MM263', 'MM264', 'MM256']].mean(axis=1).values[0]
 
-    # Display in dashboard
+    # Look ahead to check if actual exceeds threshold in next N readings
+    exceed_future = False
+    for j in range(1, lookahead_steps + 1):
+        if i + j < len(df):
+            future_row = df.iloc[i + j]
+            future_mm = future_row[['MM263', 'MM264', 'MM256']].mean()
+            if future_mm > threshold:
+                exceed_future = True
+                break
+
+    # Record the current row info in the log
+    log_data.append({
+        'Index': i,
+        'MM263': row['MM263'].values[0],
+        'MM264': row['MM264'].values[0],
+        'MM256': row['MM256'].values[0],
+        'MM_actual': mm_actual,
+        'Prediction': prediction,
+        'Alert Triggered': '⚠️ YES' if prediction == 1 else '',
+        'Future Exceedance?': '✅ Yes' if exceed_future else '❌ No'
+    })
+
+    # Show current reading
     with placeholder.container():
         st.subheader(f"Live Reading #{i+1}")
-        st.metric("Prediction", "⚠️ ALERT" if prediction == 1 else "✅ Normal")
-        st.metric("Actual", "⚠️ EXCEEDED" if actual == 1 else "✅ Safe")
-        st.metric("Result", correct)
-        st.write("Latest Sensor Readings:")
+        st.metric("Model Prediction", "⚠️ ALERT" if prediction == 1 else "✅ Normal")
+        st.metric("Future Exceedance?", "✅ Yes" if exceed_future else "❌ No")
+        st.write("Sensor Data Snapshot:")
         st.dataframe(row[feature_cols])
 
-        # Wait (speed controlled)
-        time.sleep(5.0 / speed)
-else:
-    st.warning("App not ready. Ensure model, scaler, and dataset are uploaded properly.")
+        st.markdown("---")
+        st.subheader("🔍 Log of Recent Readings")
+        st.dataframe(pd.DataFrame(log_data).tail(10))  # Show last 10 rows
+
+    time.sleep(delay)
