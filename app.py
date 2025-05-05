@@ -59,6 +59,25 @@ if model is not None and not df.empty:
             st.error(f"Error predicting: {e}")
             break
 
+    #
+    # Get actual exceedance label from test data
+actual = row['Exceed'].values[0]
+
+# Determine if prediction was correct
+correct = "✅ Correct" if prediction == actual else "❌ Incorrect"
+
+# Display
+with placeholder.container():
+    st.metric("Prediction", "⚠️ ALERT" if prediction == 1 else "✅ Normal")
+    st.metric("Actual", "⚠️ EXCEEDED" if actual == 1 else "✅ Safe")
+    st.metric("Result", correct)
+    st.write("Latest Sensor Readings:")
+    st.dataframe(row[feature_cols])
+
+    #
+    #
+
+    
         # Display
         with placeholder.container():
             st.metric("Methane Exceedance Prediction", "⚠️ ALERT" if prediction == 1 else "✅ Normal")
