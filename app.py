@@ -52,37 +52,31 @@ if model is not None and not df.empty:
             st.error(f"Error scaling input: {e}")
             break
 
-        # Predict
-        try:
-            prediction = model.predict(scaled_features)[0]
-        except Exception as e:
-            st.error(f"Error predicting: {e}")
-            break
+        #
+        #
+        #
 
-    #
-    # Get actual exceedance label from test data
-actual = row['Exceed'].values[0]
-
-# Determine if prediction was correct
-correct = "✅ Correct" if prediction == actual else "❌ Incorrect"
-
-# Display
-with placeholder.container():
-    st.metric("Prediction", "⚠️ ALERT" if prediction == 1 else "✅ Normal")
-    st.metric("Actual", "⚠️ EXCEEDED" if actual == 1 else "✅ Safe")
-    st.metric("Result", correct)
-    st.write("Latest Sensor Readings:")
-    st.dataframe(row[feature_cols])
-
-    #
-    #
-
+        # Simulate row-by-row streaming
+for i in range(len(df)):
+    row = df.iloc[[i]]  # Keep as DataFrame for scaler
+    features = row[feature_cols]
+    scaled = scaler.transform(features)
+    prediction = model.predict(scaled)[0]
     
-        # Display
-        with placeholder.container():
-            st.metric("Methane Exceedance Prediction", "⚠️ ALERT" if prediction == 1 else "✅ Normal")
-            st.write("Latest Sensor Readings:")
-            st.dataframe(row[feature_cols])
+    # Actual exceedance from dataset
+    actual = row['Exceed'].values[0]
+
+    # Determine if prediction was correct
+    correct = "✅ Correct" if prediction == actual else "❌ Incorrect"
+
+    # Display in dashboard
+    with placeholder.container():
+        st.subheader(f"Live Reading #{i+1}")
+        st.metric("Prediction", "⚠️ ALERT" if prediction == 1 else "✅ Normal")
+        st.metric("Actual", "⚠️ EXCEEDED" if actual == 1 else "✅ Safe")
+        st.metric("Result", correct)
+        st.write("Latest Sensor Readings:")
+        st.dataframe(row[feature_cols])
 
         # Wait (speed controlled)
         time.sleep(5.0 / speed)
