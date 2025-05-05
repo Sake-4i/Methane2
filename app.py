@@ -111,4 +111,4 @@ for i in range(len(df)):
         st.subheader("🔍 Log of Recent Readings")
         st.dataframe(pd.DataFrame(log_data).tail(10))  # Show last 10 rows
 
-    time.sleep(delay)
+        time.sleep(5.0 / speed)
